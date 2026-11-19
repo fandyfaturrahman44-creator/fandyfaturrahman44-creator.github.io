@@ -1,0 +1,42 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Scan Voucher SiTepat</title>
+<style>*{box-sizing:border-box}html,body{margin:0;height:100%;background:#0A0A0A;color:#fff;font:15px/1.4 -apple-system,Segoe UI,Roboto,Arial,sans-serif;overflow:hidden}
+video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}
+.top{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:12px;padding:16px;background:linear-gradient(rgba(0,0,0,.7),transparent);z-index:3}
+.top a{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.18);color:#fff;display:grid;place-items:center;text-decoration:none;font-size:20px}
+.top b{font-size:20px}
+.fr{position:fixed;left:50%;top:42%;width:min(70vw,280px);height:min(70vw,280px);transform:translate(-50%,-50%);border-radius:24px;box-shadow:0 0 0 100vmax rgba(10,10,10,.6);z-index:2}
+.fr i{position:absolute;width:38px;height:38px;border:4px solid #fff}
+.fr i:nth-child(1){left:-2px;top:-2px;border-right:0;border-bottom:0;border-radius:22px 0 0 0}.fr i:nth-child(2){right:-2px;top:-2px;border-left:0;border-bottom:0;border-radius:0 22px 0 0}
+.fr i:nth-child(3){left:-2px;bottom:-2px;border-right:0;border-top:0;border-radius:0 0 0 22px}.fr i:nth-child(4){right:-2px;bottom:-2px;border-left:0;border-top:0;border-radius:0 0 22px 0}
+.ln{position:absolute;left:8%;right:8%;height:3px;top:10%;border-radius:3px;background:linear-gradient(90deg,transparent,#FF8A4C,#fff,#FF8A4C,transparent);box-shadow:0 0 14px 3px rgba(255,138,76,.75);animation:s 2s ease-in-out infinite alternate}
+@keyframes s{to{top:88%}}
+.bot{position:fixed;left:0;right:0;bottom:0;padding:18px 18px calc(22px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(0,0,0,.8) 35%);text-align:center;z-index:3}
+.bot p{margin:0 0 12px}.btn{display:block;width:100%;border:0;border-radius:14px;padding:14px;font:700 16px Arial,sans-serif;color:#fff;background:linear-gradient(135deg,#FF7A3D,#E04A12);margin-top:10px;text-decoration:none;text-align:center}
+.btn.g{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.5)}
+.ok{position:fixed;left:50%;top:42%;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;background:#1E9E5A;display:none;place-items:center;z-index:4;font-size:52px}
+</style></head><body>
+<video id="v" playsinline muted autoplay></video>
+<div class="fr"><i></i><i></i><i></i><i></i><b class="ln"></b></div><div class="ok" id="ok">&#10003;</div>
+<div class="top"><a id="kembali" href="#" aria-label="Kembali">&#10005;</a><b>Scan voucher</b></div>
+<div class="bot"><p id="info">Membuka kamera...</p>
+<label class="btn" for="foto">Ambil foto QR</label><input type="file" id="foto" accept="image/*" capture="environment" hidden>
+<a class="btn g" id="ketik" href="#">Ketik kode / No. HP</a></div>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+var APP='https://script.google.com/macros/s/AKfycbwLN0wRJSdg30k67eH3n4v0C12kg552Ay-mBHEKFZmSOcEMTjE8S1vj78WAFktTwEY/exec';
+var q=new URLSearchParams(location.search); if(/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(q.get('app')||''))APP=q.get('app');
+document.getElementById('kembali').href=APP; document.getElementById('ketik').href=APP;
+var info=document.getElementById('info'),v=document.getElementById('v'),c=document.createElement('canvas'),jalan=false,det=null;
+try{if('BarcodeDetector' in window)det=new BarcodeDetector({formats:['qr_code']})}catch(e){}
+function kode(t){var m=String(t||'').toUpperCase().match(/VC-[A-Z0-9]{4,10}/);return m?m[0]:''}
+function hasil(t){var k=kode(t);if(!k){info.textContent=t?'QR ini bukan voucher SiTepat.':'QR belum terbaca. Dekatkan dan pastikan terang.';return false}
+ jalan=false;try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}document.getElementById('ok').style.display='grid';info.textContent='Voucher '+k+' ditemukan. Membuka aplikasi...';
+ setTimeout(function(){location.href=APP+'?cap='+encodeURIComponent(k)},500);return true}
+function baca(cb){if(det){det.detect(c).then(function(a){cb(a&&a[0]?a[0].rawValue:'')}).catch(function(){cb('')});return}
+ if(!window.jsQR)return cb('');var d=c.getContext('2d').getImageData(0,0,c.width,c.height),r=jsQR(d.data,d.width,d.height,{inversionAttempts:'attemptBoth'});cb(r?r.data:'')}
+function putar(){if(!jalan)return;if(v.readyState>=2&&v.videoWidth){var s=Math.min(1,720/v.videoWidth);c.width=v.videoWidth*s;c.height=v.videoHeight*s;
+ c.getContext('2d').drawImage(v,0,0,c.width,c.height);baca(function(t){if(t&&hasil(t))return;setTimeout(putar,200)})}else setTimeout(putar,200)}
+navigator.mediaDevices&&navigator.mediaDevices.getUserMedia?navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false}).then(function(s){v.srcObject=s;v.play();jalan=true;info.textContent='Arahkan kamera ke QR di kartu voucher konsumen';putar()}).catch(function(){info.textContent='Izinkan akses kamera di browser, atau ketuk Ambil foto QR.'}):(info.textContent='Ketuk Ambil foto QR.');
+document.getElementById('foto').onchange=function(){var f=this.files&&this.files[0];if(!f)return;info.textContent='Membaca QR...';var img=new Image(),u=URL.createObjectURL(f);
+ img.onload=function(){var s=Math.min(1,1200/Math.max(img.width,img.height));c.width=img.width*s;c.height=img.height*s;c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);baca(hasil)};img.src=u;this.value=''};
+</script></body></html>
